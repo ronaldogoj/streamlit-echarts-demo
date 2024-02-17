@@ -13,35 +13,15 @@ import pandas as pd
 def main():
     st.title("Streamlit ECharts Demo Ronaldo")
 
-    with st.sidebar:
-        st.header("Configuração")
-        api_options = ("echarts", "pyecharts")
-        selected_api = st.selectbox(
-            label="Modo de distribuição da faixa 1:",
-            options=api_options,
-        )
 
 
-        if selected_api == "echarts":
-            st.caption(
-                """ECharts demos are extracted from https://echarts.apache.org/examples/en/index.html, 
-            by copying/formattting the 'option' json object into st_echarts.
-            Definitely check the echarts example page, convert the JSON specs to Python Dicts and you should get a nice viz."""
-            )
-        if selected_api == "pyecharts":
-            st.caption(
-                """Pyecharts demos are extracted from https://github.com/pyecharts/pyecharts-gallery,
-            by copying the pyecharts object into st_pyecharts. 
-            Pyecharts is still using ECharts 4 underneath, which is why the theming between st_echarts and st_pyecharts is different."""
-            )
-
-    #demo()
-    #sourcelines, _ = inspect.getsourcelines(demo)
-    #with st.expander("Source Code"):
-    #    st.code(textwrap.dedent("".join(sourcelines[1:])))
-    #st.markdown(f"Credit: {url}")
-
-
+    # Menu lateral
+    st.sidebar.header("Configurações")
+    num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=10, step=1)
+    cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1.0, value=20.0, step=0.1)
+    tra = st.sidebar.number_input("TRA", min_value=0.0, value=1.0, step=0.1)
+    multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=2, step=1)
+    valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0, max_value=100, value=50, step=1)
 
     uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
