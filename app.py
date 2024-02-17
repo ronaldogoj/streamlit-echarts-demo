@@ -79,7 +79,7 @@ def main():
             # Display the DataFrame
             st.write(df)
 
-
+            time.sleep(20)
 
             # Show result in a popup
             st.success("File uploaded successfully!")
