@@ -50,12 +50,11 @@ def main():
             )
 
     #demo()
-    """
-    sourcelines, _ = inspect.getsourcelines(demo)
-    with st.expander("Source Code"):
-        st.code(textwrap.dedent("".join(sourcelines[1:])))
-    st.markdown(f"Credit: {url}")
-    """
+    #sourcelines, _ = inspect.getsourcelines(demo)
+    #with st.expander("Source Code"):
+    #    st.code(textwrap.dedent("".join(sourcelines[1:])))
+    #st.markdown(f"Credit: {url}")
+
 
     uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
