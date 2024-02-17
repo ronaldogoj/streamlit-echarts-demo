@@ -54,8 +54,8 @@ def main():
         st.code(textwrap.dedent("".join(sourcelines[1:])))
     st.markdown(f"Credit: {url}")
     linha=[1, 2, 3]
-    df=pd.DataFrame(linha)
-    st.markdown(f"Teste Ronaldo: {df}")
+    df=pd.DataFrame(linha, columns=['número'])
+    st.markdown(f"Teste Ronaldo: **{df}**")
 
 
 if __name__ == "__main__":
