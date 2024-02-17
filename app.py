@@ -1,5 +1,6 @@
 import inspect
 import textwrap
+import time
 
 import streamlit as st
 
@@ -80,6 +81,7 @@ def main():
 
             # Show result in a popup
             st.success("File uploaded successfully!")
+            time.sleep(20)
 
 
 if __name__ == "__main__":
