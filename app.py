@@ -19,7 +19,7 @@ def main():
         cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=15, step=1)
         tra = st.sidebar.number_input("TRA", min_value=0.0000, value=5.0506, step=0.0001, format="%.4f")
         multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=2, step=1)
-        valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0.0, max_value=100.0, value=100.0, step=0.01, format="%d%")
+        valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0.0, max_value=100.0, value=100.0, step=0.01, format="%d")
         slider_val = st.slider("Form slider")
         checkbox_val = st.checkbox("Form checkbox")
 
