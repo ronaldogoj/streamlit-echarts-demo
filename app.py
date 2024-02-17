@@ -56,7 +56,7 @@ def main():
     linha=[1, 2, 3]
     df=pd.DataFrame(linha, columns=['número'])
     st.markdown(f"Teste Ronaldo: **{df}**")
-
+    print('teste')
 
 if __name__ == "__main__":
     st.set_page_config(
