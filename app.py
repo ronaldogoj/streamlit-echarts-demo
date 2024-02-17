@@ -8,6 +8,7 @@ from demo_echarts import ST_DEMOS
 from demo_pyecharts import ST_PY_DEMOS
 
 import pandas as pd
+import openpyxl
 
 def main():
     st.title("Streamlit ECharts Demo Ronaldo")
