@@ -78,6 +78,9 @@ def main():
             # Display the DataFrame
             st.write(df)
 
+            # Show result in a popup
+            st.success("File uploaded successfully!")
+
 
 if __name__ == "__main__":
     st.set_page_config(
