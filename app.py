@@ -23,7 +23,7 @@ def main():
 
         page_options = (
             list(ST_PY_DEMOS.keys())
-            if selected_api == "pyecharts"
+            if selected_api == "Priorizar o consumo individual"
             else list(ST_DEMOS.keys())
         )
         selected_page = st.selectbox(
@@ -32,17 +32,17 @@ def main():
         )
         demo, url = (
             ST_DEMOS[selected_page]
-            if selected_api == "echarts"
+            if selected_api == "Priorizar o consumo comum"
             else ST_PY_DEMOS[selected_page]
         )
 
-        if selected_api == "echarts":
+        if selected_api == "Priorizar o consumo individual":
             st.caption(
                 """ECharts demos are extracted from https://echarts.apache.org/examples/en/index.html, 
             by copying/formattting the 'option' json object into st_echarts.
             Definitely check the echarts example page, convert the JSON specs to Python Dicts and you should get a nice viz."""
             )
-        if selected_api == "pyecharts":
+        if selected_api == "Priorizar o consumo comum":
             st.caption(
                 """Pyecharts demos are extracted from https://github.com/pyecharts/pyecharts-gallery,
             by copying the pyecharts object into st_pyecharts. 
