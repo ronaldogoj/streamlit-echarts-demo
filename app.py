@@ -20,6 +20,8 @@ def main():
         tra = st.sidebar.number_input("TRA", min_value=0.0000, value=5.0506, step=1.0)
         multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=2, step=1)
         valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0, max_value=100, value=50, step=1)
+        slider_val = st.slider("Form slider")
+        checkbox_val = st.checkbox("Form checkbox")
 
     uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
