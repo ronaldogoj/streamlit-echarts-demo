@@ -6,6 +6,7 @@ import streamlit as st
 from demo_echarts import ST_DEMOS
 from demo_pyecharts import ST_PY_DEMOS
 
+import pandas as pd
 
 def main():
     st.title("Streamlit ECharts Demo Ronaldo")
@@ -52,6 +53,8 @@ def main():
     with st.expander("Source Code"):
         st.code(textwrap.dedent("".join(sourcelines[1:])))
     st.markdown(f"Credit: {url}")
+    linha=[1, 2, 3]
+    st.markdown(f"Teste Ronaldo: {linha}")
 
 
 if __name__ == "__main__":
