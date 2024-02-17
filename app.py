@@ -16,10 +16,10 @@ def main():
 
         st.sidebar.header("Configurações")
         num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=84, step=1)
-        #cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=15, step=1)
-        tra = st.sidebar.number_input("TRA", min_value=0.0, value=5.0506, step=0.0001)
-        multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=10, step=1)
-        valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0, max_value=100, value=100, step=1)
+        cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1.0, value=20.0, step=0.1)
+        tra = st.sidebar.number_input("TRA", min_value=0.0, value=1.0, step=0.1)
+        multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=2, step=1)
+        valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0, max_value=100, value=50, step=1)
 
     uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
