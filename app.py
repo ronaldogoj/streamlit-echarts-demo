@@ -14,10 +14,10 @@ def main():
     st.title("Streamlit ECharts Demo Ronaldo")
 
     with st.sidebar:
-        st.header("Configuration")
-        api_options = ("echarts", "pyecharts")
+        st.header("Configuração")
+        api_options = ("Proporção de consumo entre os tipos", "Priorizar o consumo individual", "Priorizar o consumo comum", "Escolher um valor máximo para o consumo comum")
         selected_api = st.selectbox(
-            label="Choose your preferred API:",
+            label="Modo de distribuição da faixa 1:",
             options=api_options,
         )
 
