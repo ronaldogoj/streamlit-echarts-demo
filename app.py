@@ -53,10 +53,31 @@ def main():
     with st.expander("Source Code"):
         st.code(textwrap.dedent("".join(sourcelines[1:])))
     st.markdown(f"Credit: {url}")
-    linha=[1, 2, 3]
-    df=pd.DataFrame(linha, columns=['número'])
-    st.markdown(f"Teste Ronaldo: **{df}**")
-    print('teste')
+
+    # Add a button for file upload
+    upload_button = st.button("Upload File")
+
+    if upload_button:
+        uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
+
+        if uploaded_file is not None:
+            st.subheader("File Content:")
+            file_extension = uploaded_file.name.split(".")[-1]
+
+            # Check file type and read accordingly
+            if file_extension.lower() == "csv":
+                df = pd.read_csv(uploaded_file)
+            elif file_extension.lower() in ["txt", "log"]:
+                df = pd.read_table(uploaded_file, sep='\t')
+            elif file_extension.lower() in ["xls", "xlsx"]:
+                df = pd.read_excel(uploaded_file, engine='openpyxl')
+            else:
+                st.error(f"Unsupported file type: {file_extension}")
+                return
+
+            # Display the DataFrame
+            st.write(df)
+
 
 if __name__ == "__main__":
     st.set_page_config(
