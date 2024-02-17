@@ -16,7 +16,7 @@ def main():
 
         st.sidebar.header("Configurações")
         num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=84, step=1)
-        cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1.0, value=20.0, step=0.1)
+        cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=20, step=1)
         tra = st.sidebar.number_input("TRA", min_value=0.0, value=1.0, step=0.1)
         multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=2, step=1)
         valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0, max_value=100, value=50, step=1)
