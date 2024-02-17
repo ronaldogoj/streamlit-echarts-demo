@@ -74,7 +74,7 @@ def main():
             return
 
         # Create tabs for displaying DataFrames
-        with st.tabs("DataFrame 1", "DataFrame 2"):
+        with st.tabs("DataFrame 1"):
             with st.tab("DataFrame 1"):
                 st.write(df)
 
