@@ -73,8 +73,15 @@ def main():
             st.error(f"Unsupported file type: {file_extension}")
             return
 
-        # Display the DataFrame
-        st.write(df)
+            # Create tabs for displaying DataFrames
+            with st.tabs():
+                with st.tab("DataFrame 1"):
+                    st.write(df)
+
+                with st.tab("DataFrame 2"):
+                    # Display the same DataFrame for demonstration purposes
+                    # In a real application, you would load and display a different DataFrame
+                    st.write(df)
 
         # Show result in a popup
         st.success("File uploaded successfully!")
