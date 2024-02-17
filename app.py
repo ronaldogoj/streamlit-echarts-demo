@@ -8,7 +8,7 @@ from demo_echarts import ST_DEMOS
 from demo_pyecharts import ST_PY_DEMOS
 
 import pandas as pd
-import openpyxl
+
 
 def main():
     st.title("Streamlit ECharts Demo Ronaldo")
@@ -79,7 +79,7 @@ def main():
 
         # Show result in a popup
         st.success("File uploaded successfully!")
-        time.sleep(20)
+
 
 
 if __name__ == "__main__":
