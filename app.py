@@ -55,34 +55,32 @@ def main():
     #    st.code(textwrap.dedent("".join(sourcelines[1:])))
     #st.markdown(f"Credit: {url}")
 
-    # Add a button for file upload
-    upload_button = st.button("Upload File")
 
-    if upload_button:
-        uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
-        if uploaded_file is not None:
-            st.subheader("File Content:")
-            file_extension = uploaded_file.name.split(".")[-1]
+    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
-            # Check file type and read accordingly
-            if file_extension.lower() == "csv":
-                df = pd.read_csv(uploaded_file)
-            elif file_extension.lower() in ["txt", "log"]:
-                df = pd.read_table(uploaded_file, sep='\t')
-            elif file_extension.lower() in ["xls", "xlsx"]:
-                df = pd.read_excel(uploaded_file, engine='openpyxl')
-            else:
-                st.error(f"Unsupported file type: {file_extension}")
-                return
+    if uploaded_file is not None:
+        st.subheader("File Content:")
+        file_extension = uploaded_file.name.split(".")[-1]
 
-            # Display the DataFrame
-            st.write(df)
+        # Check file type and read accordingly
+        if file_extension.lower() == "csv":
+            df = pd.read_csv(uploaded_file)
+        elif file_extension.lower() in ["txt", "log"]:
+            df = pd.read_table(uploaded_file, sep='\t')
+        elif file_extension.lower() in ["xls", "xlsx"]:
+            df = pd.read_excel(uploaded_file, engine='openpyxl')
+        else:
+            st.error(f"Unsupported file type: {file_extension}")
+            return
 
-            time.sleep(20)
+        # Display the DataFrame
+        st.write(df)
 
-            # Show result in a popup
-            st.success("File uploaded successfully!")
+        time.sleep(20)
+
+        # Show result in a popup
+        st.success("File uploaded successfully!")
 
 
 
