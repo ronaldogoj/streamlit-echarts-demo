@@ -49,13 +49,13 @@ def main():
             Pyecharts is still using ECharts 4 underneath, which is why the theming between st_echarts and st_pyecharts is different."""
             )
 
-    demo()
-
+    #demo()
+    """
     sourcelines, _ = inspect.getsourcelines(demo)
     with st.expander("Source Code"):
         st.code(textwrap.dedent("".join(sourcelines[1:])))
     st.markdown(f"Credit: {url}")
-
+    """
 
     uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
