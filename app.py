@@ -76,13 +76,13 @@ def main():
                 st.error(f"Unsupported file type: {file_extension}")
                 return
 
-        # Display the DataFrame
-        st.write(df)
+            # Display the DataFrame
+            st.write(df)
 
 
 
-        # Show result in a popup
-        st.success("File uploaded successfully!")
+            # Show result in a popup
+            st.success("File uploaded successfully!")
 
 
 
