@@ -4,55 +4,420 @@ import time
 import streamlit as st
 
 import pandas as pd
+from pandas import DataFrame
+
+
+class Rateio:
+    def __init__(self):
+        self.num_apartamentos: int = 84
+        self.cota_minima_individual: int = 15
+        self.tra: float = 5.0506
+        self.esgoto: int = 1
+        self.entrada: DataFrame = pd.DataFrame()
+        self.cota_geral: int = self.num_apartamentos * self.cota_minima_individual
+        self.faixas: list = [1,2,3,4,5]
+        self.multiplicador: list = [1.0, 2.5, 3.1, 6.0, 8.0]
+        self.v_m3_agua: list = [x * self.tra for x in self.multiplicador]
+        self.v_tarifa_agua = [x+(x*self.esgoto) for x in self.v_m3_agua]
+        self.total_geral: int = 0
+        self.taxa: float = 0.0
+        self.total_individual: int = 0
+        self.total_comum: int = 0
+        self.aloc_max_comum_f1: int = 200
+        self.cota_min_ind: float = 0.0
+        self.cons_ind_faixas_medicao: list = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.cons_ind_faixas_geral: list = []
+        self.valor_cota_min_ind: float = 0.0
+        self.valor_total_comum: float = 0.0
+    def menu_lateral(self):
+        # Menu lateral
+        with st.sidebar:
+            st.sidebar.header("Configurações")
+            self.num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=self.num_apartamentos, step=1)
+            self.cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=self.cota_minima_individual, step=1)
+            self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
+            self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
+            self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
+            # slider_val = st.slider("Form slider")
+            # checkbox_val = st.checkbox("Form checkbox")
+
+
+    def pagina_principal(self):
+        uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
+
+        if uploaded_file is not None:
+            st.subheader("File Content:")
+            file_extension = uploaded_file.name.split(".")[-1]
+
+            # Check file type and read accordingly
+            if file_extension.lower() in ["xls", "xlsx"]:
+                self.entrada = pd.read_excel(uploaded_file, engine='openpyxl')
+            else:
+                st.error(f"Tipo de arquivo incompatível: {file_extension}")
+                return
+
+            # Display the DataFrame
+            #st.write(self.entrada[['Unidade', 'consumo']])
+
+            # Show result in a popup
+            st.success("Arquivo enviado com sucesso!")
+
+            # Chamar a verificação do arquivo
+            self.verif_arquivo()
+
+    def exibir_resumo(self, titulo, valor, exib_res=False):
+        with st.sidebar:
+            if exib_res:
+                st.sidebar.header("Resumo")
+            st.text_input(titulo, valor, disabled=True)
+
+    def calcular_rateio(self):
+        def max_aloc_faixa(fai, tc, f1_c_orig, v_t_a, cg):
+            # A alocação da faixa 1 é fixa, mas das faixas posteriores pode mudar um pouco dada a demanda, podendo ocorrer empréstimo entre os tipos
+            tipos = {0: 'comum', 1: 'individual'}
+            res = []
+            alocado = {0: 0.0, 1: 0.0}
+
+            for x in fai:
+                sobrou = cg
+                faltou = 0.0
+                # Voltar para os limites originais sempre que iniciar uma nova fase
+                f1_c = f1_c_orig.copy()
+                # Pegar emprestado - definir o limite da faixa 2 em diante (f1_c)
+                if x > 0:  # testar desde a faixa 1, pois pode acontecer, mas falta ver se funciona
+                    # Ver se algum tipo vai precisar de mais um pouco, além do seu limite inicial
+                    # Tipo Comum
+                    precisa = 0.0
+                    sobra = 0.0
+                    sobra_tipo_anterior = 0.0
+                    for key, value in tipos.items():
+                        emprestar = 0.0
+                        pendente = tc[key] - alocado[key]
+                        limite = f1_c[key]
+                        sobra = 0.0 if pendente > limite else limite - pendente
+                        # Verificar se o tipo anterior precisa de algo e se tem algo sobrando do atual
+                        if precisa > 0 and sobra > 0:
+                            # O tipo anterior precisa e temos algum valor sobrando
+                            if sobra >= precisa:
+                                # Se tem sobrando o suficiente
+                                emprestar = precisa
+                            else:
+                                # Não tem o total, mas tem alguma coisa
+                                emprestar = sobra
+                            # Já que vamos emprestar, atualizar os limites da faixa atual
+                            f1_c[key - 1] += emprestar
+                            f1_c[key] -= emprestar
+                        # Verifica se o tipo atual precisa de empréstimo
+                        if pendente > limite:
+                            precisa = pendente - limite
+                            # Como ver a sobra do tipo anterior
+                            # Verificar se tem sobra do tipo anterior
+                            if precisa > 0 and sobra_tipo_anterior > 0:
+                                # O tipo atual precisa e existe sobra do tipo anterior
+                                if sobra_tipo_anterior >= precisa:
+                                    # Se tem sobrando o suficiente
+                                    emprestar = precisa
+                                else:
+                                    # Não tem o total, mas tem alguma coisa
+                                    emprestar = sobra_tipo_anterior
+                                # Já que vamos emprestar, atualizar os limites da faixa atual
+                                f1_c[key - 1] -= emprestar
+                                f1_c[key] += emprestar
+                        # Salvar a sobra do tipo atual
+                        sobra_tipo_anterior = sobra
+                # Definir os valores por faixa
+                for key, value in tipos.items():
+                    pendente = tc[key] - alocado[key]
+                    limite = f1_c[key]
+                    if pendente > limite:
+                        qtd_alocar = f1_c[key]
+                        faltou = tc[key] - alocado[key] - qtd_alocar
+                    else:
+                        qtd_alocar = tc[key] - alocado[key]
+                        faltou = 0.0
+                    alocado[key] += qtd_alocar
+                    sobrou -= qtd_alocar
+                    valor_faixa = round(qtd_alocar * v_t_a[x - 1], 2)
+                    linha = {}
+                    linha['tipo'] = value
+                    linha['faixa'] = x
+                    linha['pendente'] = pendente
+                    linha['limite'] = limite
+                    linha['qtd'] = qtd_alocar
+                    linha['valor'] = valor_faixa
+                    linha['sobrou'] = sobrou
+                    linha['faltou'] = faltou
+                    res.append(linha)
+                # Criar o DF
+                df_res = pd.DataFrame(res)
+                # Gerar as saídas antigas
+                val_f_c = []
+                val_f_i = []
+                cons_c_f_g = []
+                cons_i_f_g = []
+                valor_t_c = 0.0
+                valor_t_i = 0.0
+                for index, row in df_res.iterrows():
+                    if row['tipo'] == 'comum':
+                        val_f_c.append([row['faixa'], row['qtd'], row['valor']])
+                        cons_c_f_g.append(row['qtd'])
+                        valor_t_c += row['valor']
+                    else:
+                        val_f_i.append([row['faixa'], row['qtd'], row['valor']])
+                        cons_i_f_g.append(row['qtd'])
+                        valor_t_i += row['valor']
+            return df_res, val_f_c, val_f_i, cons_c_f_g, cons_i_f_g, valor_t_c, valor_t_i
+
+        # Função para calcular a tarifa
+        def calcular_tarifa():
+            # TARIFA Calculada
+            df_individual = pd.DataFrame()
+            df_individual['faixa'] = self.faixas
+            df_individual['medicao'] = self.cons_ind_faixas_medicao
+            df_individual['geral'] = self.cons_ind_faixas_geral
+
+            for f in self.faixas:
+                df_individual[f'tarifa{f}'] = 0.0
+            df_individual['sobrou'] = 0.0
+
+            sobrou = 0.0
+            faixa = 1
+            for index, row in df_individual.iterrows():
+                con = row['medicao']
+                lim = row['geral']
+
+                for t in range(faixa, 6):
+                    disp = sobrou if sobrou > 0 else lim
+
+                    alocar_tar_orig = disp if con > disp else con
+                    sobrou = disp - alocar_tar_orig
+                    con -= alocar_tar_orig
+
+                    df_individual[f'tarifa{faixa}'].at[index] = alocar_tar_orig
+
+                    if sobrou > 0 or con == 0:
+                        df_individual['sobrou'].at[index] = sobrou
+                        break
+                    else:
+                        faixa += 1
+
+            # Descobrir a diferença de valor da faixa 1 para o consumo individual (repasse cota mínima individual
+            valor_faixas_medicao = [sum([round(df_individual[f'tarifa{x}'].at[y - 1] * self.v_tarifa_agua[x - 1], 4) for x in self.faixas]) for y in self.faixas]
+            valor_faixa1_medicao = valor_faixas_medicao[0]
+            valor_faixa1_conta = val_faixas_ind[0][2]
+            dif_faixa1 = round(valor_faixa1_conta - valor_faixa1_medicao, 4)
+            df_individual['val_faix_med'] = valor_faixas_medicao
+            # Percentual de valor das demais faixas
+            df_individual['proporcao_valor'] = 0.0
+            df_individual['proporcao_valor'].loc[(df_individual['medicao'] > 0) & (df_individual.index > 0)] = (
+                        df_individual['val_faix_med'] / df_individual['val_faix_med'].loc[
+                    (df_individual['medicao'] > 0) & (df_individual.index > 0)].sum())
+            # Definição da tarifa das faixas 2 em diante **** será a tarifa final *******
+            df_individual['tarifa_valor'] = 0.0
+            df_individual['tarifa_valor'].loc[df_individual['proporcao_valor'] > 0] = df_individual['val_faix_med'] / df_individual['medicao']
+            # Novos valores para as faixas (já com a sobra da faixa 1 distribuído entre as demais faixas)
+            df_individual['val_faix_med_atualizado'] = 0.0
+            df_individual['val_faix_med_atualizado'].at[0] = round(valor_faixa1_conta, 2)
+            df_individual['val_faix_med_atualizado'].loc[df_individual['proporcao_valor'] > 0] = round(
+                df_individual['val_faix_med'] - (dif_faixa1 * df_individual['proporcao_valor']), 2)
+            df_individual['val_faix_med_atualizado'].sum()
+            # Definição da tarifa das faixas 2 em diante **** será a tarifa final *******
+            df_individual['tarifa_atualiz'] = 0.0
+            df_individual['tarifa_atualiz'].loc[df_individual['proporcao_valor'] > 0] = df_individual['val_faix_med_atualizado'] / df_individual['medicao']
+            # valor com base na tarifa original
+            df_individual['tarifa_original'] = self.v_tarifa_agua
+            df_individual['val_faix_med_tar_original'] = 0.0
+            df_individual['val_faix_med_tar_original'].loc[df_individual.index > 0] = df_individual['medicao'] * df_individual['tarifa_original']
+            # Percentual de valor das demais faixas com base na tarifa original
+            df_individual['proporcao_valor_orig'] = 0.0
+            df_individual['proporcao_valor_orig'].loc[(df_individual['medicao'] > 0) & (df_individual.index > 0)] = (
+                        df_individual['val_faix_med_tar_original'] / df_individual['val_faix_med_tar_original'].loc[
+                    (df_individual['medicao'] > 0) & (df_individual.index > 0)].sum())
+            # valor com base na proporção original
+            df_individual['val_faix_med_tar_original_ajus'] = 0.0
+            df_individual['val_faix_med_tar_original_ajus'].loc[df_individual.index > 0] = (valor_total_indiv - valor_faixa1_conta) * df_individual['proporcao_valor_orig']
+            # Definição da tarifa das faixas 2
+            df_individual['tarifa_orig'] = 0.0
+            df_individual['tarifa_orig'].loc[df_individual['proporcao_valor'] > 0] = df_individual['val_faix_med_tar_original_ajus'] / df_individual['medicao']
+            # Proporção média
+            df_individual['proporcao_media'] = 0.0
+            df_individual['proporcao_media'] = (df_individual['proporcao_valor'] + df_individual['proporcao_valor_orig']) / 2
+            # valor com base na proporção média
+            df_individual['val_faix_med_tar_media'] = 0.0
+            df_individual['val_faix_med_tar_media'].loc[df_individual.index > 0] = ( valor_total_indiv - valor_faixa1_conta) * df_individual['proporcao_media']
+            # Definição da tarifa das faixas 2 em diante **** será a tarifa final *******
+            df_individual['tarifa_media'] = 0.0
+            df_individual['tarifa_media'].loc[df_individual['proporcao_media'] > 0] = df_individual['val_faix_med_tar_media'] / df_individual['medicao']
+            # Tarifa que vai ser usada é a média
+            df_individual['tarifa'] = df_individual['tarifa_media']
+            return df_individual, valor_faixa1_conta
+
+        # Preparar o rateio
+        def preparar_rateio(df_individual):
+            # Preparar o valor de rateio para as unidades
+            df_rateio = self.entrada[['consumo']].copy()
+            df_rateio.index = self.entrada['Unidade']
+            for x in range(1, 6):
+                df_rateio[f'qtd_faixa{x}'] = 0.0
+                df_rateio[f'val_faixa{x}'] = 0.0
+            df_rateio['val_faixa1'] = self.valor_cota_min_ind
+            df_rateio['qtd_faixa1'] = df_rateio['consumo'].apply(lambda x: self.cota_min_ind if x > self.cota_min_ind else x)
+            for index, row in df_rateio.iterrows():
+                con = row['consumo']
+                con -= self.cota_min_ind
+                if con > 0:
+                    for x in range(2, 6):
+                        q_m3 = self.cota_min_ind if con > self.cota_min_ind else con
+                        con -= q_m3
+                        df_rateio[f'qtd_faixa{x}'].at[index] = q_m3
+                        df_rateio[f'val_faixa{x}'].at[index] = round(q_m3 * df_individual['tarifa'].at[x - 1], 2)
+                        if con == 0:
+                            break
+            df_rateio['val_individual'] = df_rateio['val_faixa1'] + df_rateio['val_faixa2'] + df_rateio['val_faixa3'] + df_rateio['val_faixa4'] + df_rateio['val_faixa5']
+            self.entrada['fracao_ideal'] = self.entrada['fracao_ideal'].apply(lambda x: round(x, 5))
+            df_rateio['val_comum'] = 0.0
+            df_rateio['val_comum'] = self.entrada['fracao_ideal'].tolist()
+            df_rateio['val_comum'] = df_rateio['val_comum'].apply(lambda x: round(x * self.valor_total_comum, 2))
+            # Valor final do rateio
+            df_rateio['valor_final'] = df_rateio['val_individual'] + df_rateio['val_comum']
+            df_rateio['valor_final'].sum()
+            df_rateio['val_comum'].sum()
+            df_resumo_final = df_rateio[['consumo', 'valor_final', 'val_individual', 'val_comum']]
+            return df_rateio, df_resumo_final
+
+        # Ajuste no DF
+
+
+
+        # Calcular o consumo com base nas medições dos relógios, caso o consumo esteja zerado na planilha
+        if self.entrada['consumo'].sum() == 0:
+            self.entrada['consumo'] = self.entrada['dezembro-23'] - self.entrada['novembro-23']
+
+        # Verificar se temos a quantidade total de m3 consumidos no mês
+        if self.total_geral == 0:
+            # O valor não foi informado pelo usuário
+            st.error("Faltou informar o consumo total em m3!")
+            return
+
+        # Ajustar o valor do total geral (caso não alcance o mínimo que precisa)
+        self.total_geral = self.total_geral if self.total_geral >= self.cota_geral else self.cota_geral
+
+        # Verificar se temos o valor da taxa
+        if self.taxa == 0.0:
+            # O valor não foi preenchido
+            st.error("Faltou informar a taxa!")
+            return
+
+        # Total individual e total comum
+        self.total_ind = self.entrada['consumo'].sum()
+        self.total_comum = self.total_geral - self.total_ind
+
+        # Exibir resumo
+        self.exibir_resumo("Total Individual", self.total_ind, True)
+        self.exibir_resumo("Total Comum", self.total_comum)
+
+        # Usar um valor definido para alocação máxima do consumo comum
+        # Esse valor pode mudar
+        f1_cons_com: int = self.aloc_max_comum_f1
+        f1_cons_ind: int = self.cota_geral - f1_cons_com
+
+        # Ver se podemos pegar emprestado
+        df_resultado, val_faixas_com, val_faixas_ind, cons_com_faixas_geral, self.cons_ind_faixas_geral, self.valor_total_comum, valor_total_indiv = max_aloc_faixa(
+            self.faixas, [self.total_comum, self.total_ind], [f1_cons_com, f1_cons_ind], self.v_tarifa_agua, self.cota_geral)
+        self.valor_total_comum += self.taxa
+
+        # Ver se a alocação na faixa 1 mudou
+        # Se mudou, tem que atualizar a alocação da faixa 1, que foi definida anteriormente
+        if cons_com_faixas_geral[0] != f1_cons_com:
+            # Mudou... Tem que atualizar
+            f1_cons_com: int = cons_com_faixas_geral[0]
+            f1_cons_ind: int = self.cota_geral - f1_cons_com
+
+
+
+        # Definir a proporção para cálculo da cota mínima individual
+        # Proporção do consumo individual alocado na faixa 1
+        prop_f1_ind = round(f1_cons_ind / self.cota_geral, 2)
+
+        # Definição da cota mínima individual com base no percentual do consumo individual alocado na faixa 1
+        self.cota_min_ind = self.cota_minima_individual * prop_f1_ind
+        self.exibir_resumo("Cota mínima individual", self.cota_min_ind)
+
+        # Valores globais por tipo de consumo
+        # Área Comum
+        faixas_com = [[(x - 1) * f1_cons_com, x * f1_cons_com] for x in self.faixas]
+        faixas_com[-1][-1] = float("nan")
+        # Individual
+        faixas_ind = [[(x - 1) * f1_cons_ind, x * f1_cons_ind] for x in self.faixas]
+        faixas_ind[-1][-1] = float("nan")
+
+        # Consumo individual por faixa de Medição
+
+        for e in self.entrada.index.tolist():
+            alocado = 0
+            con_t = self.entrada['consumo'].at[e]
+            for f in self.faixas:
+                val = self.cota_min_ind if con_t - alocado > self.cota_min_ind else con_t - alocado
+                alocado += val
+                self.cons_ind_faixas_medicao[f - 1] = round(self.cons_ind_faixas_medicao[f - 1] + val, 2)
+
+        # CALCULAR A TARIFA
+        df_individual, valor_faixa1_conta = calcular_tarifa()
+        #st.write(df_individual)
+
+        # Valor da cota mínima individual
+        # Dividir o valor do consumo individual alocado na faixa1 pelo número de apartamentos
+        self.valor_cota_min_ind = round(valor_faixa1_conta / self.num_apartamentos, 2)
+        self.exibir_resumo("Valor da cota mínima individual", self.valor_cota_min_ind)
+
+        # Preparar o rateio
+        df_rateio, df_resumo_final = preparar_rateio(df_individual)
+
+        st.write(df_resumo_final)
+
+        # Exibir o valor final da conta
+        self.exibir_resumo("Valor final da conta", df_rateio['valor_final'].sum())
+
+
+
+
+
+
+    def verif_arquivo(self):
+        erro=[]
+        # Verificar a quantidade de linhas do arquivo de entrada
+        if len(self.entrada) != self.num_apartamentos:
+            erro.append('Número de unidades incorreto')
+
+        # Falta adicionar mais verificações
+
+        # Número de erros
+        if len(erro) == 0:
+            st.success('Planilha Excel verificada com sucesso.')
+
+            # Chamar a próxima etapa para cálculo do rateio
+            self.calcular_rateio()
+        else:
+            st.error(f"Arquivo com problemas. Número de erros: {len(erro)}")
+
+
+
 
 
 def main():
-    st.title("Streamlit ECharts Demo Ronaldo")
+    rateio = Rateio()
 
+    st.title("Rateio da conta de água do condomínio Quintessenza")
 
+    rateio.menu_lateral()
 
-    # Menu lateral
-    with st.sidebar:
-
-        st.sidebar.header("Configurações")
-        num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=84, step=1)
-        cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=15, step=1)
-        tra = st.sidebar.number_input("TRA", min_value=0.0000, value=5.0506, step=0.0001, format="%.4f")
-        multiplicador = st.sidebar.number_input("Multiplicador", min_value=1, value=2, step=1)
-        valor_esgoto_percent = st.sidebar.number_input("Valor Esgoto (%)", min_value=0, max_value=100, value=100, step=1, format="%d")
-        slider_val = st.slider("Form slider")
-        checkbox_val = st.checkbox("Form checkbox")
-
-    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
-
-    if uploaded_file is not None:
-        st.subheader("File Content:")
-        file_extension = uploaded_file.name.split(".")[-1]
-
-        # Check file type and read accordingly
-        if file_extension.lower() == "csv":
-            df = pd.read_csv(uploaded_file)
-        elif file_extension.lower() in ["txt", "log"]:
-            df = pd.read_table(uploaded_file, sep='\t')
-        elif file_extension.lower() in ["xls", "xlsx"]:
-            df = pd.read_excel(uploaded_file, engine='openpyxl')
-        else:
-            st.error(f"Unsupported file type: {file_extension}")
-            return
-
-        # Display the DataFrame
-        st.write(df)
-
-        time.sleep(20)
-
-        # Show result in a popup
-        st.success("File uploaded successfully!")
+    rateio.pagina_principal()
 
 
 
 if __name__ == "__main__":
     st.set_page_config(
-        page_title="Streamlit ECharts Demo", page_icon=":chart_with_upwards_trend:"
+        page_title="Rateio da conta de água", page_icon=":chart_with_upwards_trend:"
     )
     main()
 
