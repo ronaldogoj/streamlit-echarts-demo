@@ -5,7 +5,7 @@ import streamlit as st
 
 import pandas as pd
 from pandas import DataFrame
-
+from st_aggrid import AgGrid
 
 class Rateio:
     def __init__(self):
@@ -46,7 +46,7 @@ class Rateio:
         uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
         if uploaded_file is not None:
-            st.subheader("File Content:")
+            st.subheader("Resultado:")
             file_extension = uploaded_file.name.split(".")[-1]
 
             # Check file type and read accordingly
@@ -60,7 +60,7 @@ class Rateio:
             #st.write(self.entrada[['Unidade', 'consumo']])
 
             # Show result in a popup
-            st.success("Arquivo enviado com sucesso!")
+            # st.success("Arquivo enviado com sucesso!")
 
             # Chamar a verificação do arquivo
             self.verif_arquivo()
@@ -285,6 +285,12 @@ class Rateio:
             df_resumo_final = df_rateio[['consumo', 'valor_final', 'val_individual', 'val_comum']]
             return df_rateio, df_resumo_final
 
+        def real_br_money_mask(my_value):
+            a = '{:,.2f}'.format(float(my_value))
+            b = a.replace(',', 'v')
+            c = b.replace('.', ',')
+            return c.replace('v', '.')
+
         # Ajuste no DF
 
 
@@ -379,6 +385,8 @@ class Rateio:
         self.exibir_resumo("Valor final da conta", df_rateio['valor_final'].sum())
 
 
+        st.success('Valor da conta --> R$ ' + real_br_money_mask(round(df_rateio['valor_final'].sum(), 2)))
+
 
 
 
@@ -393,7 +401,7 @@ class Rateio:
 
         # Número de erros
         if len(erro) == 0:
-            st.success('Planilha Excel verificada com sucesso.')
+            # st.success('Planilha Excel verificada com sucesso.')
 
             # Chamar a próxima etapa para cálculo do rateio
             self.calcular_rateio()
@@ -407,7 +415,7 @@ class Rateio:
 def main():
     rateio = Rateio()
 
-    st.title("Rateio da conta de água do condomínio Quintessenza")
+    st.title("Conta de água do condomínio Quintessenza")
 
     rateio.menu_lateral()
 
