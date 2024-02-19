@@ -5,7 +5,10 @@ import streamlit as st
 
 import pandas as pd
 from pandas import DataFrame
-from st_aggrid import AgGrid
+import base64
+from io import BytesIO
+import xlsxwriter
+
 
 class Rateio:
     def __init__(self):
@@ -291,6 +294,19 @@ class Rateio:
             c = b.replace('.', ',')
             return c.replace('v', '.')
 
+        # Function to save all dataframes to one single excel
+        def dfs_tabs(df_list, sheet_list, file_name):
+
+            output = BytesIO()
+
+            writer = pd.ExcelWriter(output, engine='xlsxwriter')
+            for dataframe, sheet in zip(df_list, sheet_list):
+                dataframe.to_excel(writer, sheet_name=sheet, startrow=0, startcol=0)
+            writer.close()
+
+            processed_data = output.getvalue()
+            return processed_data
+
         # Ajuste no DF
 
 
@@ -387,8 +403,17 @@ class Rateio:
 
         st.success('Valor da conta --> R$ ' + real_br_money_mask(round(df_rateio['valor_final'].sum(), 2)))
 
+        # Download do resultado em Excel
+        # list of dataframes
+        dfs = [df_resumo_final, df_rateio]
 
+        # list of sheet names
+        sheets = ['resumo', 'rateio']
 
+        df_xlsx = dfs_tabs(dfs, sheets, 'multi-test.xlsx')
+        st.download_button(label='📥 Download Current Result',
+                           data=df_xlsx,
+                           file_name='df_test.xlsx')
 
 
     def verif_arquivo(self):
