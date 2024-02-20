@@ -436,7 +436,7 @@ class Rateio:
         # list of sheet names
         # sheets = ['resumo', 'rateio']
         # Gerar o Excel
-        df_xlsx = dfs_tabs(dfs, sheets, 'multi-test.xlsx')
+        # df_xlsx = dfs_tabs(dfs, sheets, 'multi-test.xlsx')
         # Botão de Download
         # st.download_button(label='📥 Download', data=df_xlsx, file_name='df_test.xlsx')
 
