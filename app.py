@@ -429,12 +429,12 @@ class Rateio:
 
         st.success('Valor da conta --> R$ ' + real_br_money_mask(round(df_rateio['valor_final'].sum(), 2)))
 
-        # Download do resultado em Excel com mais de uma aba
+        # Download do resultado em Excel com mais de uma aba - não utilizado no momento
         # list of dataframes
-        dfs = [df_resumo_final, df_rateio]
+        # dfs = [df_resumo_final, df_rateio]
 
         # list of sheet names
-        sheets = ['resumo', 'rateio']
+        # sheets = ['resumo', 'rateio']
         # Gerar o Excel
         df_xlsx = dfs_tabs(dfs, sheets, 'multi-test.xlsx')
         # Botão de Download
