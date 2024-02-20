@@ -8,6 +8,7 @@ from pandas import DataFrame
 import base64
 from io import BytesIO
 import xlsxwriter
+from openpyxl import load_workbook
 
 
 class Rateio:
@@ -307,6 +308,31 @@ class Rateio:
             processed_data = output.getvalue()
             return processed_data
 
+
+        def gerar_excel_formatado(df, m3_total, tra, sheet="Rateio"):
+            # Carregue a planilha existente
+            workbook = load_workbook('modelo.xlsx')
+
+            # Escolha a planilha desejada (pode ser a ativa ou outra específica)
+            sheet = workbook.active
+
+            # Escreva os valores do DataFrame na planilha
+            for row_index, row in df.reset_index(drop=True).iterrows():
+                for col_index, value in enumerate(row):
+                    print(f'Valor: {value} - {row_index} - {col_index}')
+                    sheet.cell(row=row_index + 3, column=col_index + 2, value=value)
+
+            # Valores com posição fixa
+            sheet.cell(row=8, column=8, value=m3_total)
+            sheet.cell(row=14, column=12, value=tra)
+
+            # Save the workbook to binary data
+            binary_data = BytesIO()
+            workbook.save(binary_data)
+            binary_data.seek(0)
+
+            return binary_data.getvalue()
+
         # Ajuste no DF
 
 
@@ -403,17 +429,37 @@ class Rateio:
 
         st.success('Valor da conta --> R$ ' + real_br_money_mask(round(df_rateio['valor_final'].sum(), 2)))
 
-        # Download do resultado em Excel
+        # Download do resultado em Excel com mais de uma aba
         # list of dataframes
         dfs = [df_resumo_final, df_rateio]
 
         # list of sheet names
         sheets = ['resumo', 'rateio']
-
+        # Gerar o Excel
         df_xlsx = dfs_tabs(dfs, sheets, 'multi-test.xlsx')
-        st.download_button(label='📥 Download Current Result',
+        # Botão de Download
+        st.download_button(label='📥 Download',
                            data=df_xlsx,
                            file_name='df_test.xlsx')
+
+
+
+
+
+        # Gerar o Excel com formatação
+        df_xlsx_2 = gerar_excel_formatado(df_resumo_final, self.total_geral, self.tra)
+        # Botão de Download
+        st.download_button(label='📥 Download Style',
+                           data=df_xlsx_2,
+                           file_name='df_test-style.xlsx')
+
+
+
+
+
+
+
+
 
 
     def verif_arquivo(self):
