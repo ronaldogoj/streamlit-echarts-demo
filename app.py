@@ -438,20 +438,18 @@ class Rateio:
         # Gerar o Excel
         df_xlsx = dfs_tabs(dfs, sheets, 'multi-test.xlsx')
         # Botão de Download
-        st.download_button(label='📥 Download',
-                           data=df_xlsx,
-                           file_name='df_test.xlsx')
+        # st.download_button(label='📥 Download', data=df_xlsx, file_name='df_test.xlsx')
 
 
 
 
 
         # Gerar o Excel com formatação
-        df_xlsx_2 = gerar_excel_formatado(df_resumo_final, self.total_geral, self.tra)
+        df_form = gerar_excel_formatado(df_resumo_final, self.total_geral, self.tra)
         # Botão de Download
-        st.download_button(label='📥 Download Style',
-                           data=df_xlsx_2,
-                           file_name='df_test-style.xlsx')
+        st.download_button(label='Download',
+                           data=df_form,
+                           file_name='Quintessenza - Rateio Água.xlsx')
 
 
 
