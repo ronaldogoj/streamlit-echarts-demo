@@ -346,7 +346,15 @@ class Rateio:
             # O valor não foi informado pelo usuário
             st.error("Faltou informar o consumo total em m3!")
             return
-
+        
+        # Total individual e total comum
+        self.total_ind = self.entrada['consumo'].sum()
+        self.total_comum = self.total_geral - self.total_ind
+        
+        # Atribuir ao consumo individual a diferença até chegar na cota mínima (1260)
+        if self.total_ind + self.total_comum < self.cota_geral:
+            self.total_ind = self.cota_geral - self.total_comum
+        
         # Ajustar o valor do total geral (caso não alcance o mínimo que precisa)
         self.total_geral = self.total_geral if self.total_geral >= self.cota_geral else self.cota_geral
 
@@ -356,9 +364,7 @@ class Rateio:
             st.error("Faltou informar a taxa!")
             return
 
-        # Total individual e total comum
-        self.total_ind = self.entrada['consumo'].sum()
-        self.total_comum = self.total_geral - self.total_ind
+        
 
         # Exibir resumo
         self.exibir_resumo("Total Individual", self.total_ind, True)
