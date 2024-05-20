@@ -42,6 +42,7 @@ class Rateio:
             self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
             self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
             self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
+            self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=1, value=self.aloc_max_comum_f1, step=1)
             # slider_val = st.slider("Form slider")
             # checkbox_val = st.checkbox("Form checkbox")
 
