@@ -44,7 +44,6 @@ class Rateio:
             self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
             self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=1, value=self.aloc_max_comum_f1, step=1)
             # slider_val = st.slider("Form slider")
-            # checkbox_val = st.checkbox("Form checkbox")
 
 
     def pagina_principal(self):
