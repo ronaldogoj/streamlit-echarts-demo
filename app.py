@@ -27,12 +27,14 @@ class Rateio:
         self.taxa: float = 0.0
         self.total_individual: int = 0
         self.total_comum: int = 0
+        self.aloc_min_comum_f1: int = 1
         self.aloc_max_comum_f1: int = 200
         self.cota_min_ind: float = 0.0
         self.cons_ind_faixas_medicao: list = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.cons_ind_faixas_geral: list = []
         self.valor_cota_min_ind: float = 0.0
         self.valor_total_comum: float = 0.0
+        self.unidade = 0
     def menu_lateral(self):
         # Menu lateral
         with st.sidebar:
@@ -42,7 +44,8 @@ class Rateio:
             self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
             self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
             self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
-            self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=1, value=self.aloc_max_comum_f1, step=1)
+            #self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=1, value=self.aloc_max_comum_f1, step=1)
+
             # slider_val = st.slider("Form slider")
 
 
@@ -69,11 +72,13 @@ class Rateio:
             # Chamar a verificação do arquivo
             self.verif_arquivo()
 
-    def exibir_resumo(self, titulo, valor, exib_res=False):
+    def exibir_resumo(self, titulo, valor, exib_res=False, tipo="text"):
         with st.sidebar:
             if exib_res:
                 st.sidebar.header("Resumo")
             st.text_input(titulo, valor, disabled=True)
+
+
 
     def calcular_rateio(self):
         def max_aloc_faixa(fai, tc, f1_c_orig, v_t_a, cg):
@@ -333,6 +338,66 @@ class Rateio:
 
             return binary_data.getvalue()
 
+        def exibir_detalhes_unidade(unidade):
+
+
+
+            consumo_unidade = df_resumo_final['consumo'].loc[df_resumo_final.index == unidade].values[0]
+
+            st.write(f"Unidade -> {unidade}")
+            st.write(f"Consumo da unidade -> {consumo_unidade}")
+            st.write(f"Valor total da conta -> {df_resumo_final['valor_final'].loc[df_resumo_final.index == unidade].values[0]}")
+
+            #valor_final_unidade = df_resumo_final['valor_final'].loc[df_resumo_final['Unidade'] == unidade]
+            #valor_individual = df_resumo_final['val_individual'].loc[df_resumo_final['Unidade'] == unidade]
+            #valor_comum = df_resumo_final['val_comum'].loc[df_resumo_final['Unidade'] == unidade]
+            m3_f=0
+            resultado_individual = []
+            for f in range(1, 6):
+                if consumo_unidade == 0:
+                    break
+                linha = {}
+
+                consumo_faixa = consumo_unidade if consumo_unidade < self.cota_min_ind else self.cota_min_ind
+                linha['Tipo'] = 'Individual'
+                linha['Faixa'] = f
+
+                linha['De'] = m3_f
+                m3_f += self.cota_min_ind
+                linha['Até'] = m3_f
+
+                linha['Consumo'] = consumo_faixa
+
+                tarifa = df_individual['tarifa'].loc[df_individual['faixa'] == f].values[0]
+                tarifa_original = df_individual['tarifa_original'].loc[df_individual['faixa'] == f].values[0]
+                linha['Tarifa Original'] = real_br_money_mask(tarifa_original)
+                if f > 1:
+                    linha['Tarifa Calculada'] = real_br_money_mask(tarifa)
+                    linha['Valor'] = real_br_money_mask(round(consumo_faixa * tarifa, 2))
+                else:
+                    linha['Tarifa Calculada'] = real_br_money_mask(0)
+                    linha['Valor'] = real_br_money_mask(self.valor_cota_min_ind)
+
+                consumo_unidade -= consumo_faixa
+
+                resultado_individual.append(linha)
+
+            # Comum
+            linha = {}
+            linha['Tipo'] = 'Comum'
+            linha['Valor'] = df_resumo_final['val_comum'].loc[df_resumo_final.index == unidade].values[0]
+            resultado_individual.append(linha)
+
+            # Dataframe
+            df_resultado_final = pd.DataFrame(resultado_individual)
+
+
+            st.write(df_resultado_final)
+
+
+
+
+
         # Ajuste no DF
 
 
@@ -369,6 +434,18 @@ class Rateio:
         # Exibir resumo
         self.exibir_resumo("Total Individual", self.total_ind, True)
         self.exibir_resumo("Total Comum", self.total_comum)
+
+
+        # Atualizar o slider
+        self.aloc_max_comum_f1 = self.total_comum
+        self.aloc_min_comum_f1 = 0 if self.total_ind >= (self.num_apartamentos * self.cota_minima_individual) else (self.num_apartamentos * self.cota_minima_individual) - self.total_ind
+
+        self.aloc_max_comum_f1 = st.sidebar.slider("Alocação Max F1 Comum", min_value=self.aloc_min_comum_f1,
+                                                   max_value=self.aloc_max_comum_f1, value=160,
+                                                   step=1)
+
+        #atualizar o valor do slider
+
 
         # Usar um valor definido para alocação máxima do consumo comum
         # Esse valor pode mudar
@@ -432,6 +509,10 @@ class Rateio:
         # Exibir o valor final da conta
         self.exibir_resumo("Valor final da conta", df_rateio['valor_final'].sum())
 
+        # Teste 16/06
+        #st.write(df_individual)
+
+        #st.write(exibir_detalhes_unidade(1304))
 
         st.success('Valor da conta --> R$ ' + real_br_money_mask(round(df_rateio['valor_final'].sum(), 2)))
 
@@ -457,8 +538,10 @@ class Rateio:
                            data=df_form,
                            file_name='Quintessenza - Rateio Água.xlsx')
 
-
-
+        self.unidade = st.number_input("Unidade", min_value=0, value=self.unidade, step=1)
+        if self.unidade > 0:
+            st.subheader(f"Detalhes da unidade {self.unidade}:")
+            exibir_detalhes_unidade(self.unidade)
 
 
 
