@@ -58,7 +58,7 @@ class Rateio:
             file_extension = uploaded_file.name.split(".")[-1]
 
             # Salvar o arquivo para uso posterior
-            self.arquivo = uploaded_file
+            #self.arquivo = uploaded_file
 
             # Check file type and read accordingly
             if file_extension.lower() in ["xls", "xlsx"]:
@@ -412,11 +412,11 @@ class Rateio:
             self.entrada['consumo'] = self.entrada['antes'] - self.entrada['depois']
 
         # Preencher o consumo total e taxa com base no valor da planilha
-        df_info_conta = pd.read_excel(self.arquivo, sheet_name="Conta", engine='openpyxl')
+        #df_info_conta = pd.read_excel(self.arquivo, sheet_name="Conta", engine='openpyxl')
         # Ler o valor da taxa a partir da coluna "Configurações" com o valor "Taxa"
-        self.taxa = df_info_conta.loc[df_info_conta['Configurações'] == 'Taxa']['Valor'].values[0]
+        #self.taxa = df_info_conta.loc[df_info_conta['Configurações'] == 'Taxa']['Valor'].values[0]
         # Ler o valor do consumo total a partir da coluna "Configurações" com o valor "Faturado (m3)"
-        self.total_geral = df_info_conta.loc[df_info_conta['Configurações'] == 'Faturado (m3)']['Valor'].values[0]
+        #self.total_geral = df_info_conta.loc[df_info_conta['Configurações'] == 'Faturado (m3)']['Valor'].values[0]
 
         # Verificar se temos a quantidade total de m3 consumidos no mês
         if self.total_geral == 0:
