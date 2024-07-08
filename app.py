@@ -35,6 +35,7 @@ class Rateio:
         self.valor_cota_min_ind: float = 0.0
         self.valor_total_comum: float = 0.0
         self.unidade = 0
+        self.arquivo = None
     def menu_lateral(self):
         # Menu lateral
         with st.sidebar:
@@ -55,6 +56,9 @@ class Rateio:
         if uploaded_file is not None:
             st.subheader("Resultado:")
             file_extension = uploaded_file.name.split(".")[-1]
+
+            # Salvar o arquivo para uso posterior
+            self.entrada = uploaded_file
 
             # Check file type and read accordingly
             if file_extension.lower() in ["xls", "xlsx"]:
@@ -408,7 +412,7 @@ class Rateio:
             self.entrada['consumo'] = self.entrada['antes'] - self.entrada['depois']
 
         # Preencher o consumo total e taxa com base no valor da planilha
-        df_info_conta = pd.read_excel(uploaded_file, sheet_name="Conta", engine='openpyxl')
+        df_info_conta = pd.read_excel(self.arquivo, sheet_name="Conta", engine='openpyxl')
         # Ler o valor da taxa a partir da coluna "Configurações" com o valor "Taxa"
         self.taxa = df_info_conta.loc[df_info_conta['Configurações'] == 'Taxa']['Valor'].values[0]
         # Ler o valor do consumo total a partir da coluna "Configurações" com o valor "Faturado (m3)"
