@@ -58,7 +58,7 @@ class Rateio:
             file_extension = uploaded_file.name.split(".")[-1]
 
             # Salvar o arquivo para uso posterior
-            self.entrada = uploaded_file
+            self.arquivo = uploaded_file
 
             # Check file type and read accordingly
             if file_extension.lower() in ["xls", "xlsx"]:
