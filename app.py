@@ -18,6 +18,7 @@ class Rateio:
         self.tra: float = 5.0506
         self.esgoto: int = 1
         self.entrada: DataFrame = pd.DataFrame()
+        self.config_conta: DataFrame = pd.DataFrame()
         self.cota_geral: int = self.num_apartamentos * self.cota_minima_individual
         self.faixas: list = [1,2,3,4,5]
         self.multiplicador: list = [1.0, 2.5, 3.1, 6.0, 8.0]
@@ -43,8 +44,8 @@ class Rateio:
             self.num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=self.num_apartamentos, step=1)
             self.cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=self.cota_minima_individual, step=1)
             self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
-            self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
-            self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
+            #self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
+            #self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
             #self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=1, value=self.aloc_max_comum_f1, step=1)
 
             # slider_val = st.slider("Form slider")
@@ -64,6 +65,7 @@ class Rateio:
             if file_extension.lower() in ["xls", "xlsx"]:
                 # Ler o arquivo de entrada
                 self.entrada = pd.read_excel(uploaded_file, sheet_name="Consumo", engine='openpyxl')
+                self.config_conta = pd.read_excel(uploaded_file, sheet_name="Conta", engine='openpyxl')
             else:
                 st.error(f"Tipo de arquivo incompatível: {file_extension}")
                 return
@@ -414,9 +416,13 @@ class Rateio:
         # Preencher o consumo total e taxa com base no valor da planilha
         #df_info_conta = pd.read_excel(self.arquivo, sheet_name="Conta", engine='openpyxl')
         # Ler o valor da taxa a partir da coluna "Configurações" com o valor "Taxa"
-        #self.taxa = df_info_conta.loc[df_info_conta['Configurações'] == 'Taxa']['Valor'].values[0]
+        self.taxa = self.config_conta.loc[self.config_conta['Configurações'] == 'Taxa']['Valor'].values[0] + self.config_conta.loc[self.config_conta['Configurações'] == 'Juros']['Valor'].values[0] + self.config_conta.loc[self.config_conta['Configurações'] == 'Multa']['Valor'].values[0] + self.config_conta.loc[self.config_conta['Configurações'] == 'Outros']['Valor'].values[0]
         # Ler o valor do consumo total a partir da coluna "Configurações" com o valor "Faturado (m3)"
+        self.total_geral = int(self.config_conta.loc[self.config_conta['Configurações'] == 'Faturado (m3)']['Valor'].values[0])
         #self.total_geral = df_info_conta.loc[df_info_conta['Configurações'] == 'Faturado (m3)']['Valor'].values[0]
+
+        self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
+        self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
 
         # Verificar se temos a quantidade total de m3 consumidos no mês
         if self.total_geral == 0:
@@ -453,7 +459,7 @@ class Rateio:
         self.aloc_min_comum_f1 = 0 if self.total_ind >= (self.num_apartamentos * self.cota_minima_individual) else (self.num_apartamentos * self.cota_minima_individual) - self.total_ind
 
         self.aloc_max_comum_f1 = st.sidebar.slider("Alocação Max F1 Comum", min_value=self.aloc_min_comum_f1,
-                                                   max_value=self.aloc_max_comum_f1, value=160,
+                                                   max_value=int(self.aloc_max_comum_f1), value=160,
                                                    step=1)
 
         #atualizar o valor do slider
@@ -519,7 +525,7 @@ class Rateio:
         st.write(df_resumo_final)
 
         # Exibir o valor final da conta
-        self.exibir_resumo("Valor final da conta", df_rateio['valor_final'].sum())
+        self.exibir_resumo("Valor final da conta", round(df_rateio['valor_final'].sum(), 2))
 
         # Teste 16/06
         #st.write(df_individual)
