@@ -15,15 +15,15 @@ class Rateio:
     def __init__(self):
         self.num_apartamentos: int = 84
         self.cota_minima_individual: int = 15
-        self.tra: float = 5.0506
+        self.tra: float = 0.0000
         self.esgoto: int = 1
         self.entrada: DataFrame = pd.DataFrame()
         self.config_conta: DataFrame = pd.DataFrame()
         self.cota_geral: int = self.num_apartamentos * self.cota_minima_individual
         self.faixas: list = [1,2,3,4,5]
         self.multiplicador: list = [1.0, 2.5, 3.1, 6.0, 8.0]
-        self.v_m3_agua: list = [x * self.tra for x in self.multiplicador]
-        self.v_tarifa_agua = [x+(x*self.esgoto) for x in self.v_m3_agua]
+        self.v_m3_agua: list = []
+        self.v_tarifa_agua: list = []
         self.total_geral: int = 0
         self.taxa: float = 0.0
         self.total_individual: int = 0
@@ -37,13 +37,17 @@ class Rateio:
         self.valor_total_comum: float = 0.0
         self.unidade = 0
         self.arquivo = None
+
+    def ler_arquivo_excel_entrada(self):
+        pass
+
     def menu_lateral(self):
         # Menu lateral
         with st.sidebar:
             st.sidebar.header("Configurações")
             self.num_apartamentos = st.sidebar.number_input("Número de Apartamentos", min_value=1, value=self.num_apartamentos, step=1)
             self.cota_minima_individual = st.sidebar.number_input("Cota Mínima Individual", min_value=1, value=self.cota_minima_individual, step=1)
-            self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
+            #self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
             #self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
             #self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
             #self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=1, value=self.aloc_max_comum_f1, step=1)
@@ -205,17 +209,28 @@ class Rateio:
                 for t in range(faixa, 6):
                     disp = sobrou if sobrou > 0 else lim
 
-                    alocar_tar_orig = disp if con > disp else con
+                    if row['faixa'] == 5:
+                        # Estamos na última faixa, então não podemos ter sobra
+                        alocar_tar_orig = disp
+                        # Resolver o problema de aumento de valor após ter sobra na última faixa
+                        # Atualizar o valor de medição com base na quantidade de m3 alocados
+                        df_individual['medicao'].at[index] = alocar_tar_orig
+                    else:
+                        alocar_tar_orig = disp if con > disp else con
+
+
                     sobrou = disp - alocar_tar_orig
                     con -= alocar_tar_orig
 
                     df_individual[f'tarifa{faixa}'].at[index] = alocar_tar_orig
 
-                    if sobrou > 0 or con == 0:
+                    if sobrou > 0 or con <= 0:
                         df_individual['sobrou'].at[index] = sobrou
                         break
                     else:
                         faixa += 1
+
+
 
             # Descobrir a diferença de valor da faixa 1 para o consumo individual (repasse cota mínima individual
             valor_faixas_medicao = [sum([round(df_individual[f'tarifa{x}'].at[y - 1] * self.v_tarifa_agua[x - 1], 4) for x in self.faixas]) for y in self.faixas]
@@ -283,7 +298,13 @@ class Rateio:
                 con -= self.cota_min_ind
                 if con > 0:
                     for x in range(2, 6):
-                        q_m3 = self.cota_min_ind if con > self.cota_min_ind else con
+                        # Verificar se estamos na última faixa
+                        if x == 5:
+                            # Última faixa
+                            q_m3 = con
+                        else:
+                            # Não é a última faixa
+                            q_m3 = self.cota_min_ind if con > self.cota_min_ind else con
                         con -= q_m3
                         df_rateio[f'qtd_faixa{x}'].at[index] = q_m3
                         df_rateio[f'val_faixa{x}'].at[index] = round(q_m3 * df_individual['tarifa'].at[x - 1], 2)
@@ -365,13 +386,22 @@ class Rateio:
                     break
                 linha = {}
 
-                consumo_faixa = consumo_unidade if consumo_unidade < self.cota_min_ind else self.cota_min_ind
+                if f == 5:
+                    # Última faixa
+                    consumo_faixa = consumo_unidade
+                else:
+                    # Não é a última faixa
+                    consumo_faixa = consumo_unidade if consumo_unidade < self.cota_min_ind else self.cota_min_ind
+
                 linha['Tipo'] = 'Individual'
                 linha['Faixa'] = f
 
                 linha['De'] = m3_f
                 m3_f += self.cota_min_ind
-                linha['Até'] = m3_f
+                if f == 5:
+                    linha['Até'] = float('inf')
+                else:
+                    linha['Até'] = m3_f
 
                 linha['Consumo'] = consumo_faixa
 
@@ -421,8 +451,16 @@ class Rateio:
         self.total_geral = int(self.config_conta.loc[self.config_conta['Configurações'] == 'Faturado (m3)']['Valor'].values[0])
         #self.total_geral = df_info_conta.loc[df_info_conta['Configurações'] == 'Faturado (m3)']['Valor'].values[0]
 
+        self.tra = self.config_conta.loc[self.config_conta['Configurações'] == 'TRA']['Valor'].values[0]
+        self.tra = st.sidebar.number_input("TRA", min_value=0.0000, value=self.tra, step=0.0001, format="%.4f")
+
+        self.v_m3_agua: list = [x * self.tra for x in self.multiplicador]
+        self.v_tarifa_agua = [x + (x * self.esgoto) for x in self.v_m3_agua]
+
         self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
         self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
+
+
 
         # Verificar se temos a quantidade total de m3 consumidos no mês
         if self.total_geral == 0:
@@ -447,8 +485,6 @@ class Rateio:
             st.error("Faltou informar a taxa!")
             return
 
-        
-
         # Exibir resumo
         self.exibir_resumo("Total Individual", self.total_ind, True)
         self.exibir_resumo("Total Comum", self.total_comum)
@@ -458,9 +494,15 @@ class Rateio:
         self.aloc_max_comum_f1 = self.total_comum
         self.aloc_min_comum_f1 = 0 if self.total_ind >= (self.num_apartamentos * self.cota_minima_individual) else (self.num_apartamentos * self.cota_minima_individual) - self.total_ind
 
-        self.aloc_max_comum_f1 = st.sidebar.slider("Alocação Max F1 Comum", min_value=self.aloc_min_comum_f1,
-                                                   max_value=int(self.aloc_max_comum_f1), value=160,
+        valor_default_sugerido = int(self.config_conta.loc[self.config_conta['Configurações'] == 'Aloc Max Comum']['Valor'].values[0])
+        valor_default_max_f1_consumo = valor_default_sugerido if self.aloc_max_comum_f1 > valor_default_sugerido and self.aloc_min_comum_f1 < valor_default_sugerido else self.aloc_min_comum_f1
+
+        if self.aloc_max_comum_f1 != self.aloc_min_comum_f1:
+            self.aloc_max_comum_f1 = st.sidebar.slider("Alocação Max F1 Comum", min_value=self.aloc_min_comum_f1,
+                                                   max_value=int(self.aloc_max_comum_f1), value=valor_default_max_f1_consumo,
                                                    step=1)
+        else:
+            self.aloc_max_comum_f1 = st.sidebar.number_input("Alocação Max F1 Comum", min_value=self.aloc_min_comum_f1, max_value=int(self.aloc_max_comum_f1), value=valor_default_max_f1_consumo, step=1)
 
         #atualizar o valor do slider
 
@@ -481,8 +523,6 @@ class Rateio:
             # Mudou... Tem que atualizar
             f1_cons_com: int = cons_com_faixas_geral[0]
             f1_cons_ind: int = self.cota_geral - f1_cons_com
-
-
 
         # Definir a proporção para cálculo da cota mínima individual
         # Proporção do consumo individual alocado na faixa 1
@@ -523,6 +563,8 @@ class Rateio:
         df_rateio, df_resumo_final = preparar_rateio(df_individual)
 
         st.write(df_resumo_final)
+
+        #st.write(df_rateio)
 
         # Exibir o valor final da conta
         self.exibir_resumo("Valor final da conta", round(df_rateio['valor_final'].sum(), 2))
