@@ -18,7 +18,7 @@ EXPOSE 8501
 
 # Set the name of the image
 LABEL maintainer="Ronaldo Geraidine <ronaldogoj@gmail.com>" \
-      description="My Streamlit App" \
+      description="Rateio Conta Água Quintessenza" \
       version="1.0"
 
 # Command to run the application
