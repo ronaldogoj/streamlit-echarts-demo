@@ -352,7 +352,7 @@ class Rateio:
             # Escreva os valores do DataFrame na planilha
             for row_index, row in df.reset_index(drop=True).iterrows():
                 for col_index, value in enumerate(row):
-                    print(f'Valor: {value} - {row_index} - {col_index}')
+                    #print(f'Valor: {value} - {row_index} - {col_index}')
                     sheet.cell(row=row_index + 3, column=col_index + 2, value=value)
 
             # Valores com posição fixa
