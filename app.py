@@ -441,7 +441,7 @@ class Rateio:
 
         # Calcular o consumo com base nas medições dos relógios, caso o consumo esteja zerado na planilha
         if self.entrada['consumo'].sum() == 0:
-            self.entrada['consumo'] = self.entrada['antes'] - self.entrada['depois']
+            self.entrada['consumo'] = self.entrada['depois'] - self.entrada['antes']
 
         # Preencher o consumo total e taxa com base no valor da planilha
         #df_info_conta = pd.read_excel(self.arquivo, sheet_name="Conta", engine='openpyxl')
@@ -458,7 +458,7 @@ class Rateio:
         self.v_tarifa_agua = [x + (x * self.esgoto) for x in self.v_m3_agua]
 
         self.total_geral = st.sidebar.number_input("Total Geral", min_value=0, value=self.total_geral, step=1)
-        self.taxa = st.sidebar.number_input("Taxa", min_value=0.00, value=self.taxa, step=0.01, format="%.2f")
+        self.taxa = st.sidebar.number_input("Taxa", value=self.taxa, step=0.01, format="%.2f")
 
 
 
