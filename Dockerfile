@@ -22,4 +22,4 @@ LABEL maintainer="Ronaldo Geraidine <ronaldogoj@gmail.com>" \
       version="1.0"
 
 # Command to run the application
-CMD ["streamlit", "run", "app.py"]
+CMD ["streamlit", "run", "app-v2.py"]
